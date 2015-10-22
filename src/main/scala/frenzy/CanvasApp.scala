@@ -11,6 +11,9 @@ import scala.language.postfixOps
 
 
 object CanvasApp extends JSApp {
+  val margin = 50
+  val penWidth = 20
+  val defaultTimerInterval = 64
 
   def main(): Unit = {
     val container = div.render
@@ -22,8 +25,6 @@ object CanvasApp extends JSApp {
     val docEl = dom.document.documentElement
 
     def dims = Dimension(docEl.clientWidth, docEl.clientHeight)
-
-    val margin = 50
 
     canvas.style.left = s"${margin}px"
     canvas.style.top = s"${margin}px"
@@ -58,41 +59,36 @@ object CanvasApp extends JSApp {
     var lastDim = Dimension.random(dims)
     var autoDrawIsActive = true
 
-    def draw(): Unit = {
-      def drawRndGeo() = {
-        // for slowly shifting between randomly sized shapes
-        def randomDimSmoothed(scale: Int = 1): Dimension = {
-          val newDim = Dimension.random(Dimension(dims.w/scale, dims.h/scale))
-          val factor = 0.1
-          def interpolate(a: Int, b: Int, factor: Double): Int = {
-            require(0 <= factor && factor <= 1)
-            ((1 - factor) * a + factor * b).toInt
-          }
-          Dimension(
-            interpolate(newDim.w, lastDim.w, factor),
-            interpolate(newDim.h, lastDim.h, factor)
-          )
+    def draw(): Unit = if (autoDrawIsActive) {
+      // for slowly shifting between randomly sized shapes
+      def randomDimSmoothed(scale: Int = 1): Dimension = {
+        val newDim = Dimension.random(Dimension(dims.w/scale, dims.h/scale))
+        val factor = 0.1
+        def interpolate(a: Int, b: Int, factor: Double): Int = {
+          require(0 <= factor && factor <= 1)
+          ((1 - factor) * a + factor * b).toInt
         }
-        def drawRndCircleAt(pos: Point) = {
-          val rad = randomDimSmoothed(20).w
-          ctx.beginPath()
-          ctx.arc(pos.x, pos.y, rad, 0, 360)
-          ctx.fill()
-        }
-        def drawRndRectAt(pos: Point) = {
-          val dim = randomDimSmoothed(10)
-          ctx.fillRect(pos.x, pos.y, dim.w, dim.h)
-        }
-        def randomPoint = Point.random(dims)
-        ctx.fillStyle = randomColor()
-        Random.nextInt(2) match {
-          case 0 => drawRndCircleAt(randomPoint)
-          case 1 => drawRndRectAt(randomPoint)
-        }
+        Dimension(
+          interpolate(newDim.w, lastDim.w, factor),
+          interpolate(newDim.h, lastDim.h, factor)
+        )
       }
+      def drawRndCircleAt(pos: Point) = {
+        val rad = randomDimSmoothed(20).w
+        ctx.beginPath()
+        ctx.arc(pos.x, pos.y, rad, 0, 360)
+        ctx.fill()
+      }
+      def drawRndRectAt(pos: Point) = {
+        val dim = randomDimSmoothed(10)
+        ctx.fillRect(pos.x, pos.y, dim.w, dim.h)
+      }
+      def randomPoint = Point.random(dims)
 
-      if (autoDrawIsActive) {
-        drawRndGeo()
+      ctx.fillStyle = randomColor()
+      Random.nextInt(2) match {
+        case 0 => drawRndCircleAt(randomPoint)
+        case 1 => drawRndRectAt(randomPoint)
       }
     }
 
@@ -112,31 +108,29 @@ object CanvasApp extends JSApp {
       ctx.moveTo(penPos.x, penPos.y)
     } }
 
-    canvas.onmousemove = { (evt: dom.MouseEvent) => {
-      if (interactiveDrawIsActive) {
-        val oldPos = penPos
-        val oldCol = col
-        penPos = mousePos(evt)
-        col = randomColor()
+    canvas.onmousemove = { (evt: dom.MouseEvent) => if (interactiveDrawIsActive) {
+      val oldPos = penPos
+      val oldCol = col
+      penPos = mousePos(evt)
+      col = randomColor()
 
-        val gradient = ctx.createLinearGradient(oldPos.x, oldPos.y, penPos.x, penPos.y)
-        gradient.addColorStop(0, oldCol)
-        gradient.addColorStop(1, col)
+      val gradient = ctx.createLinearGradient(oldPos.x, oldPos.y, penPos.x, penPos.y)
+      gradient.addColorStop(0, oldCol)
+      gradient.addColorStop(1, col)
 
-        ctx.strokeStyle = gradient
-        ctx.lineWidth = 20
-        ctx.beginPath()
-        ctx.moveTo(oldPos.x, oldPos.y)
-        ctx.lineTo(penPos.x, penPos.y)
-        ctx.stroke()
-      }
+      ctx.strokeStyle = gradient
+      ctx.lineWidth = penWidth
+      ctx.beginPath()
+      ctx.moveTo(oldPos.x, oldPos.y)
+      ctx.lineTo(penPos.x, penPos.y)
+      ctx.stroke()
     } }
 
     canvas.onmouseup = { (evt: dom.MouseEvent) => {
       interactiveDrawIsActive = false
     } }
 
-    var timer = new Timer(64, draw)
+    var timer = new Timer(defaultTimerInterval, draw)
 
     dom.document.onkeyup = { (evt: dom.KeyboardEvent) => evt.keyCode match {
       case KeyCode.space =>  autoDrawIsActive = !autoDrawIsActive
