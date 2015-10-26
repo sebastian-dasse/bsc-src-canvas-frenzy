@@ -3,25 +3,32 @@ package frenzy
 import org.scalajs.dom
 
 class Timer(var interval: Int, action: => Unit) {
-  private var timerId = -1
+  val minInterval = 1
+  val maxInterval = 2048
   val inc = 2
+  private var timerId: Option[Int] = None
 
   def incr() = {
-    if (interval <= 2048) interval *= inc
+    if (interval <= maxInterval) interval *= inc
     updateInterval()
   }
 
   def decr() = {
-    if (interval > 1) interval /= inc
+    if (interval > minInterval) interval /= inc
     updateInterval()
   }
 
-  private def updateInterval() = {
-    dom.clearInterval(timerId)
-    timerId = dom.setInterval(() => action, interval)
-    println(s"timer interval: $interval")
+  def toggle() = timerId match {
+    case None => start()
+    case Some(id) => dom.clearInterval(id)
   }
 
+  private def updateInterval() = timerId.foreach( id => {
+    dom.clearInterval(id)
+    timerId = Some(dom.setInterval(() => action, interval))
+    println(s"timer interval: $interval")
+  })
+
   def start() =
-    dom.setInterval(() => action, interval)
+    timerId = Some(dom.setInterval(() => action, interval))
 }

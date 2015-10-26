@@ -1,14 +1,11 @@
 package frenzy
 
-import org.scalajs.dom.ext.KeyCode
-
 import scala.scalajs.js.JSApp
 import org.scalajs.dom
 import org.scalajs.dom.{CanvasRenderingContext2D, document, html}
+import org.scalajs.dom.ext.KeyCode
 import scalatags.JsDom.all._
 import scala.util.Random
-import scala.language.postfixOps
-
 
 object CanvasApp extends JSApp {
   val margin = 50
@@ -57,9 +54,8 @@ object CanvasApp extends JSApp {
     }
 
     var lastDim = Dimension.random(dims)
-    var autoDrawIsActive = true
 
-    def draw(): Unit = if (autoDrawIsActive) {
+    def draw(): Unit = {
       // for slowly shifting between randomly sized shapes
       def randomDimSmoothed(scale: Int = 1): Dimension = {
         val newDim = Dimension.random(Dimension(dims.w/scale, dims.h/scale))
@@ -94,7 +90,7 @@ object CanvasApp extends JSApp {
 
 
     def mousePos(evt: dom.MouseEvent) = {
-      val rect = canvas.getBoundingClientRect()
+      val rect = canvas.getBoundingClientRect
       Point(evt.clientX - rect.left, evt.clientY - rect.top)
     }
 
@@ -133,10 +129,10 @@ object CanvasApp extends JSApp {
     var timer = new Timer(defaultTimerInterval, draw)
 
     dom.document.onkeyup = { (evt: dom.KeyboardEvent) => evt.keyCode match {
-      case KeyCode.space =>  autoDrawIsActive = !autoDrawIsActive
-      case KeyCode.escape => clear()
+      case KeyCode.space =>  timer.toggle()
       case KeyCode.up =>     timer.decr()
       case KeyCode.down =>   timer.incr()
+      case KeyCode.escape => clear()
       case _ => ()
     }}
 
