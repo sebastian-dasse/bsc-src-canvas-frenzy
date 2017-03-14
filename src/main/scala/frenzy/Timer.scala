@@ -20,7 +20,9 @@ class Timer(var interval: Int, action: => Unit) {
 
   def toggle() = timerId match {
     case None => start()
-    case Some(id) => dom.clearInterval(id)
+    case Some(id) =>
+      dom.clearInterval(id)
+      timerId = None
   }
 
   private def updateInterval() = timerId.foreach( id => {
